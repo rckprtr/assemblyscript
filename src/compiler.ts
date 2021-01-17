@@ -799,7 +799,11 @@ export class Compiler extends DiagnosticEmitter {
             this.ensureArgumentsLength();
             this.runtimeFeatures |= RuntimeFeatures.setArgumentsLength;
           }
-          if (functionInstance.is(CommonFlags.COMPILED)) this.module.addFunctionExport(functionInstance.internalName, prefix + name);
+          var externalName = prefix + name;
+          if (functionInstance.hasDecorator(DecoratorFlags.EXTERNAL)) {
+            externalName = mangleFunctionExportName(functionInstance, functionInstance.declaration);
+          }
+          if (functionInstance.is(CommonFlags.COMPILED)) this.module.addFunctionExport(functionInstance.internalName, externalName);
         }
         break;
       }
@@ -1396,16 +1400,6 @@ export class Compiler extends DiagnosticEmitter {
         this.error(
           DiagnosticCode.An_implementation_cannot_be_declared_in_ambient_contexts,
           instance.identifierNode.range
-        );
-      }
-
-      // cannot have an annotated external name
-      if (instance.hasDecorator(DecoratorFlags.EXTERNAL)) {
-        let decoratorNodes = instance.decoratorNodes;
-        let decorator = assert(findDecorator(DecoratorKind.EXTERNAL, decoratorNodes));
-        this.error(
-          DiagnosticCode.Decorator_0_is_not_valid_here,
-          decorator.range, "external"
         );
       }
 
@@ -10902,6 +10896,44 @@ export class Compiler extends DiagnosticEmitter {
 }
 
 // helpers
+
+function mangleFunctionExportName(
+  instance: Function,
+  declaration: DeclarationStatement
+): string {
+
+  var program = instance.program;
+  var decorator = assert(findDecorator(DecoratorKind.EXTERNAL, declaration.decorators));
+  var externalName = instance.name;
+  var args = decorator.args;
+  if (args !== null && args.length > 0) {
+    if (args.length == 1) {
+      let arg = args[0];
+      //for now only take the first argument to replace externalName;
+      if (arg.isLiteralKind(LiteralKind.STRING)) {
+        externalName = (<StringLiteralExpression>arg).value;
+      } else {
+        program.error(
+          DiagnosticCode.String_literal_expected,
+          arg.range
+        );
+      }
+    } else {
+      program.error(
+        DiagnosticCode.Not_implemented_0,
+        decorator.range,
+        "Multiple arguments for an @external on a function export name"
+      );
+    }
+
+  } else {
+    program.error(
+      DiagnosticCode.Expected_at_least_0_arguments_but_got_1,
+      decorator.range, "1", "0"
+    );
+  }
+  return externalName;
+}
 
 function mangleImportName(
   element: Element,

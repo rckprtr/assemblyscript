@@ -2350,6 +2350,7 @@ export class Program extends DiagnosticEmitter {
     if (!declaration.is(CommonFlags.INSTANCE)) {
       if (parent.kind != ElementKind.CLASS_PROTOTYPE) {
         validDecorators |= DecoratorFlags.GLOBAL;
+        validDecorators |= DecoratorFlags.EXTERNAL;
       }
     }
     var element = new FunctionPrototype(
