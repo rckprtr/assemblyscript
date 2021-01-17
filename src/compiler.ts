@@ -10909,7 +10909,7 @@ function mangleFunctionExportName(
   if (args !== null && args.length > 0) {
     if (args.length == 1) {
       let arg = args[0];
-      //for now only take the first argument to replace externalName;
+      // for now only take the first argument to replace externalName;
       if (arg.isLiteralKind(LiteralKind.STRING)) {
         externalName = (<StringLiteralExpression>arg).value;
       } else {
